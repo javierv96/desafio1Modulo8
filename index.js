@@ -22,13 +22,13 @@ app.post('/roommate', async (req, res) => {
     try {
 
         const filePath = path.join(__dirname, 'roommates.json');
-        
+
         // Verifica si el archivo "roommates.json" existe
         if (!fs.existsSync(filePath)) {
             // Si no existe, crea el archivo con la estructura adecuada
             fs.writeFileSync(filePath, JSON.stringify({ roommates: [] }));
         }
-        
+
         const nuevoRoommate = await funcion.obtenerRoommateAleatorio();
         const { roommates } = JSON.parse(fs.readFileSync("roommates.json", "utf8"));
         roommates.push(nuevoRoommate);
@@ -96,9 +96,9 @@ app.post('/gasto', async (req, res) => {
         const roommateComprador = req.body.roommate;
         const descripcion = req.body.descripcion;
 
-        if(!descripcion){
+        if (!descripcion) {
             console.log("Por favor ingresar una descripcion");
-            return res.status(400).json({ error: "Por favor ingresar una descripcion"})
+            return res.status(400).json({ error: "Por favor ingresar una descripcion" })
         }
 
         // Leer el archivo de roommates
@@ -106,14 +106,14 @@ app.post('/gasto', async (req, res) => {
         const roommates = roommatesData.roommates;
 
         //Calcular el monto de cada compañero de cuarto debe pagar
-        const totalRoommates = roommates.length - 1;
+        const totalRoommates = roommates.length;
         const montoPorCompañero = Math.floor(montoTotal / totalRoommates);
 
         //Actualizar los montos "debe y recibe" para cada compañero de cuarto
         roommates.forEach(roommate => {
-            if(roommate.nombre === roommateComprador) {
-                roommate.recibe += montoTotal;
-            }else {
+            if (roommate.nombre === roommateComprador) {
+                roommate.recibe += montoTotal - montoPorCompañero;
+            } else {
                 roommate.debe += montoPorCompañero;
             }
         })
@@ -149,11 +149,11 @@ app.put('/gasto/:id', async (req, res) => {
 
         const descripcion = req.body.descripcion;
 
-        if(!descripcion){
+        if (!descripcion) {
             console.log("Por favor ingresar una descripcion");
-            return res.status(400).json({ error: "Por favor ingresar una descripcion"})
+            return res.status(400).json({ error: "Por favor ingresar una descripcion" })
         }
-        
+
         let { gastos } = JSON.parse(fs.readFileSync("gastos.json", "utf8"));
 
         const index = gastos.findIndex(gasto => gasto.id === id);
@@ -178,13 +178,15 @@ app.put('/gasto/:id', async (req, res) => {
         const roommatesData = JSON.parse(fs.readFileSync("roommates.json", "utf8"));
         const roommates = roommatesData.roommates;
 
+        const totalRoommates = roommates.length;
+        const montoPorCompañero = Math.floor(diffMonto / totalRoommates);
+
         // Actualizar los montos "debe y recibe" para cada compañero de cuarto
         roommates.forEach(roommate => {
             if (roommate.nombre === oldRoommate) {
-                roommate.recibe += diffMonto;
+                roommate.recibe += diffMonto - montoPorCompañero;
             } else {
-                const totalRoommates = roommates.length - 1;
-                const montoPorCompañero = Math.floor(diffMonto / totalRoommates);
+
                 roommate.debe += montoPorCompañero;
             }
         });
@@ -217,22 +219,22 @@ app.delete('/gasto/:id', async (req, res) => {
         // Actualizar los montos "debe y recibe" para cada compañero de cuarto
         const roommatesData = JSON.parse(fs.readFileSync("roommates.json", "utf8"));
         const roommates = roommatesData.roommates;
-        const totalRoommates = roommates.length - 1;
+        const totalRoommates = roommates.length;
         const montoPorCompañero = Math.floor(montoTotal / totalRoommates);
 
         roommates.forEach(roommate => {
             if (roommate.nombre === roommateComprador) {
-                roommate.recibe -= montoTotal;
+                roommate.recibe -= montoTotal - montoPorCompañero;
             } else {
                 roommate.debe -= montoPorCompañero;
             }
         });
 
         fs.writeFileSync("roommates.json", JSON.stringify(roommatesData));
-        
+
         gastos = gastos.filter(gasto => gasto.id !== id);
         fs.writeFileSync("gastos.json", JSON.stringify({ gastos }));
-        res.json({ message: "Gasto eliminado correctamente"});
+        res.json({ message: "Gasto eliminado correctamente" });
 
     } catch (err) {
         console.log("Error General: ", err)
