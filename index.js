@@ -5,6 +5,7 @@ const app = express();
 const funcion = require('./funciones/fun.js')
 const { v4: uuidv4 } = require('uuid');
 const { format } = require('date-fns');
+const path = require('path');
 
 app.use(express.json());
 
@@ -19,6 +20,14 @@ let message = "";
 
 app.post('/roommate', async (req, res) => {
     try {
+
+        const filePath = path.join(__dirname, 'roommates.json');
+        
+        // Verifica si el archivo "roommates.json" existe
+        if (!fs.existsSync(filePath)) {
+            // Si no existe, crea el archivo con la estructura adecuada
+            fs.writeFileSync(filePath, JSON.stringify({ roommates: [] }));
+        }
         
         const nuevoRoommate = await funcion.obtenerRoommateAleatorio();
         const { roommates } = JSON.parse(fs.readFileSync("roommates.json", "utf8"));
@@ -112,6 +121,11 @@ app.post('/gasto', async (req, res) => {
         fs.writeFileSync("roommates.json", JSON.stringify(roommatesData));
 
         //archivo gastos
+        const gastosFilePath = path.join(__dirname, 'gastos.json');
+        if (!fs.existsSync(gastosFilePath)) {
+            fs.writeFileSync(gastosFilePath, JSON.stringify({ gastos: [] }));
+        }
+
         const { gastos } = JSON.parse(fs.readFileSync("gastos.json", "utf8"));
         gastos.push(nuevoGasto);
         fs.writeFileSync("gastos.json", JSON.stringify({ gastos }));
